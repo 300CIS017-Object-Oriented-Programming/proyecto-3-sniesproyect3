@@ -1,65 +1,83 @@
 class Consolidado:
     def __init__(self, id_sexo=0, sexo="", ano=0, semestre=0, inscritos=0, admitidos=0, matriculados=0, matriculados_primer_semestre=0, graduados=0):
-        self.id_sexo = id_sexo
-        self.sexo = sexo
-        self.ano = ano
-        self.semestre = semestre
-        self.inscritos = inscritos
-        self.admitidos = admitidos
-        self.matriculados = matriculados
-        self.matriculados_primer_semestre = matriculados_primer_semestre
-        self.graduados = graduados
+        self._id_sexo = id_sexo
+        self._sexo = sexo
+        self._ano = ano
+        self._semestre = semestre
+        self._inscritos = inscritos
+        self._admitidos = admitidos
+        self._matriculados = matriculados
+        self._matriculados_primer_semestre = matriculados_primer_semestre
+        self._graduados = graduados
 
-    def get_id_sexo(self):
-        return self.id_sexo
+    @property
+    def id_sexo(self):
+        return self._id_sexo
 
-    def set_id_sexo(self, id_sexo):
-        self.id_sexo = id_sexo
+    @id_sexo.setter
+    def id_sexo(self, id_sexo):
+        self._id_sexo = id_sexo
 
-    def get_sexo(self):
-        return self.sexo
+    @property
+    def sexo(self):
+        return self._sexo
 
-    def set_sexo(self, sex):
-        self.sexo = sex
+    @sexo.setter
+    def sexo(self, sexo):
+        self._sexo = sexo
 
-    def get_ano(self):
-        return self.ano
+    @property
+    def ano(self):
+        return self._ano
 
-    def set_ano(self, ano):
-        self.ano = ano
+    @ano.setter
+    def ano(self, ano):
+        self._ano = ano
 
-    def get_semestre(self):
-        return self.semestre
+    @property
+    def semestre(self):
+        return self._semestre
 
-    def set_semestre(self, semestre):
-        self.semestre = semestre
+    @semestre.setter
+    def semestre(self, semestre):
+        self._semestre = semestre
 
-    def get_inscritos(self):
-        return self.inscritos
+    @property
+    def inscritos(self):
+        return self._inscritos
 
-    def set_inscritos(self, inscritos):
-        self.inscritos = inscritos
+    @inscritos.setter
+    def inscritos(self, inscritos):
+        self._inscritos = inscritos
 
-    def get_admitidos(self):
-        return self.admitidos
+    @property
+    def admitidos(self):
+        return self._admitidos
 
-    def set_admitidos(self, admitidos):
-        self.admitidos = admitidos
+    @admitidos.setter
+    def admitidos(self, admitidos):
+        self._admitidos = admitidos
 
-    def get_matriculados(self):
-        return self.matriculados
+    @property
+    def matriculados(self):
+        return self._matriculados
 
-    def set_matriculados(self, matriculados):
-        self.matriculados = matriculados
+    @matriculados.setter
+    def matriculados(self, matriculados):
+        self._matriculados = matriculados
 
-    def get_matriculados_primer_semestre(self):
-        return self.matriculados_primer_semestre
+    @property
+    def matriculados_primer_semestre(self):
+        return self._matriculados_primer_semestre
 
-    def set_matriculados_primer_semestre(self, matriculados_primer_semestre):
-        self.matriculados_primer_semestre = matriculados_primer_semestre
+    @matriculados_primer_semestre.setter
+    def matriculados_primer_semestre(self, matriculados_primer_semestre):
+        self._matriculados_primer_semestre = matriculados_primer_semestre
 
-    def get_graduados(self):
-        return self.graduados
+    @property
+    def graduados(self):
+        return self._graduados
 
-    def set_graduados(self, graduados):
-        self.graduados = graduados
+    @graduados.setter
+    def graduados(self, graduados):
+        self._graduados = graduados
