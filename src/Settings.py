@@ -1,15 +1,5 @@
+#Settings.py
 class Settings:
     BASE_PATH = "C:/SNIES_EXTRACTOR/inputs/"
-    PROGRAMAS_FILTRAR_FILE_PATH = BASE_PATH + "programas.csv"
-    ADMITIDOS_FILE_PATH = BASE_PATH + "admitidos"
-    GRADUADOS_FILE_PATH = BASE_PATH + "graduados"
-    MATRICULADOS_FILE_PATH = BASE_PATH + "matriculados"
-    MATRICULADOS_PRIMER_SEMESTRE_FILE_PATH = BASE_PATH + "matriculadosPrimerSemestre"
-    INSCRITOS_FILE_PATH = BASE_PATH + "inscritos"
     OUTPUTS_PATH = "C:/SNIES_EXTRACTOR/outputs/"
     DELIMITADOR = ';'
-    COLUMNAS_INFO_CONSOLIDADOS = 8
-    DATOS_ACADEM_DEMOGRAF = 4
-    COLUMNA_13 = 13
-    COLUMNA_12 = 12
-    FILAS_RESTANTES = 3

@@ -1,52 +1,52 @@
+# snies_controller.py
+import csv
+import json
+import pandas as pd
+from Settings import Settings
+from GestorArchivo import GestorArchivo
+import streamlit as st
+
 class SNIESController:
-    def __init__(self):
-        self.programas_academicos: Dict[int, ProgramaAcademico] = {}
-        self.gestor_csv_obj = GestorCsv()
-        self.etiquetas_columnas: List[str] = []
-        self.ruta_programas_csv = Settings.PROGRAMAS_FILTRAR_FILE_PATH
-        self.ruta_admitidos = Settings.ADMITIDOS_FILE_PATH
-        self.ruta_graduados = Settings.GRADUADOS_FILE_PATH
-        self.ruta_inscritos = Settings.INSCRITOS_FILE_PATH
-        self.ruta_matriculados = Settings.MATRICULADOS_FILE_PATH
-        self.ruta_matriculados_primer_semestre = Settings.MATRICULADOS_PRIMER_SEMESTRE_FILE_PATH
-        self.ruta_output = Settings.OUTPUT_FILE_PATH
+    def __init__(self, data_directory):
+        self.gestor_archivo = GestorArchivo(data_directory)
+        self.programas_academicos = {}
 
-    def procesar_datos_csv(self):
-        try:
-            with open(self.ruta_programas_csv, 'r') as csvfile:
-                csvreader = csv.reader(csvfile)
-                self.etiquetas_columnas = next(csvreader)  # Assuming the first row has headers
-                for row in csvreader:
-                    id_programa = int(row[0])  # Example assuming first column is ID
-                    programa = ProgramaAcademico(id_programa, *row[1:])
-                    self.programas_academicos[id_programa] = programa
-        except Exception as e:
-            print(f"Error processing CSV file: {e}")
+    def cargar_programas(self, start_year, end_year):
+        files = self.gestor_archivo.list_csv_files()
+        filtered_files = self.gestor_archivo.filter_files_by_year(files, start_year, end_year)
 
-    def exportar_datos(self, formato: str):
-        if formato.lower() == "json":
-            with open(self.ruta_output, 'w') as jsonfile:
-                json.dump({id_: p.to_dict() for id_, p in self.programas_academicos.items()}, jsonfile)
-        elif formato.lower() == "csv":
-            with open(self.ruta_output, 'w', newline='') as csvfile:
-                csvwriter = csv.writer(csvfile)
-                csvwriter.writerow(self.etiquetas_columnas)
-                for programa in self.programas_academicos.values():
-                    csvwriter.writerow(programa.to_list())
-        elif formato.lower() == "txt":
-            with open(self.ruta_output, 'w') as txtfile:
-                for programa in self.programas_academicos.values():
-                    txtfile.write(str(programa) + "\\n")
-        else:
-            print("Unsupported format")
+        for file_name in filtered_files:
+            data = self.gestor_archivo.load_csv(file_name)
+            if data is not None:
+                self.programas_academicos[file_name] = data
 
-    def agregar_programa_academico(self, id_programa: int, datos: List[str]):
-        programa = ProgramaAcademico(id_programa, *datos)
-        self.programas_academicos[id_programa] = programa
+    def export_data(self, format_type="csv"):
+        if not self.programas_academicos:
+            st.warning("No data available to export.")
+            return
 
-    def obtener_programa_por_id(self, id_programa: int) -> ProgramaAcademico:
-        return self.programas_academicos.get(id_programa, None)
+        output_file = Settings.OUTPUTS_PATH + "program_data." + format_type
 
-    def listar_programas(self):
-        for id_, programa in self.programas_academicos.items():
-            print(f"{id_}: {programa}")
+        if format_type == "json":
+            with open(output_file, 'w') as json_file:
+                json.dump({file: df.to_dict(orient="records") for file, df in self.programas_academicos.items()}, json_file)
+        elif format_type == "csv":
+            with open(output_file, 'w', newline='') as csv_file:
+                csv_writer = csv.writer(csv_file, delimiter=";")
+                for file, df in self.programas_academicos.items():
+                    csv_writer.writerow([f"Data from {file}"])
+                    df.to_csv(csv_file, index=False, header=True, sep=";", mode="a")
+        elif format_type == "xlsx":
+            with pd.ExcelWriter(output_file) as writer:
+                for file, df in self.programas_academicos.items():
+                    df.to_excel(writer, sheet_name=file[:30], index=False)
+
+        st.success(f"Data exported successfully as {format_type.upper()}!")
+
+    def download_button(self):
+        if st.button("Download CSV"):
+            self.export_data("csv")
+        if st.button("Download JSON"):
+            self.export_data("json")
+        if st.button("Download XLSX"):
+            self.export_data("xlsx")

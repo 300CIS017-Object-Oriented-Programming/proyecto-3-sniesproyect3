@@ -1,3 +1,4 @@
+#Consolidado
 class Consolidado:
     def __init__(self, id_sexo=0, sexo="", ano=0, semestre=0, inscritos=0, admitidos=0, matriculados=0, matriculados_primer_semestre=0, graduados=0):
         self._id_sexo = id_sexo
