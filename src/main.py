@@ -4,7 +4,7 @@ from SNIESController import SNIESController
 from GestorArchivo import GestorArchivo
 
 def main():
-    data_directory = r"C:\SNIES_EXTRACTOR\inputs"
+    data_directory = r"proyecto-3-sniesproyect3\docs"
     gestor_archivo = GestorArchivo(data_directory)
     data_loader = DataLoaderApp(gestor_archivo)
     snies_controller = SNIESController(data_directory)

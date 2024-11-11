@@ -1,3 +1,4 @@
+
 # data_loader_app.py
 import streamlit as st
 from GestorArchivo import GestorArchivo
@@ -9,11 +10,11 @@ class DataLoaderApp:
 
     def run(self):
         st.title("SNIES Data Loader and Analyzer")
-        self.select_year_range()
-        available_files = self.gestor_archivo.list_csv_files()
-        self.display_available_files(available_files)
-        self.handle_file_upload()
-        self.select_files_for_analysis(available_files)
+        if self.select_year_range():  # Verificar rango de años antes de proceder
+            available_files = self.gestor_archivo.list_csv_files()
+            self.display_available_files(available_files)
+            self.handle_file_upload()
+            self.select_files_for_analysis()
 
     def select_year_range(self):
         st.subheader("Files Year Range for Analysis")
@@ -26,6 +27,7 @@ class DataLoaderApp:
 
     def display_available_files(self, available_files):
         st.subheader("Available Data Files")
+        # Filtrar archivos según el rango de años
         self.filtered_files = self.gestor_archivo.filter_files_by_year(available_files, self.start_year, self.end_year)
         if not self.filtered_files:
             st.warning(f"No files available in the year range {self.start_year} to {self.end_year}.")
@@ -42,7 +44,7 @@ class DataLoaderApp:
             if file_path:
                 self.temp_files.append(file_path.name)
 
-    def select_files_for_analysis(self, available_files):
+    def select_files_for_analysis(self):
         st.subheader("Select Files for Analysis")
         all_files = self.filtered_files + self.temp_files
         self.selected_files = st.multiselect("Choose files to load", all_files)
