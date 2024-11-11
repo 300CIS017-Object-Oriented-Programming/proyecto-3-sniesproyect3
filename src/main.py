@@ -1,3 +1,4 @@
+# main.py
 import streamlit as st
 from data_loader import DataLoaderApp
 from SNIESController import SNIESController
@@ -9,14 +10,15 @@ def main():
     data_loader = DataLoaderApp(gestor_archivo)
     snies_controller = SNIESController(data_directory)
 
-    # Run DataLoaderApp to manage file selection
+    # Run DataLoaderApp to manage file selection and filtering
     data_loader.run()
-    
+
     # Load and analyze selected files in SNIESController
     if data_loader.selected_files:
         start_year = data_loader.start_year
         end_year = data_loader.end_year
-        snies_controller.cargar_programas(start_year, end_year)
+        keywords = data_loader.keywords  # New: retrieve keywords from DataLoaderApp
+        snies_controller.cargar_programas(start_year, end_year, keywords)  # Pass keywords
 
         # Display Analysis Section
         st.subheader("Data Analysis Results")

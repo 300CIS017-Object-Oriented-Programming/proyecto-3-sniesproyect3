@@ -11,14 +11,32 @@ class SNIESController:
         self.gestor_archivo = GestorArchivo(data_directory)
         self.programas_academicos = {}
 
-    def cargar_programas(self, start_year, end_year):
+    def cargar_programas(self, start_year, end_year, keywords=""):
         files = self.gestor_archivo.list_csv_files()
         filtered_files = self.gestor_archivo.filter_files_by_year(files, start_year, end_year)
 
         for file_name in filtered_files:
             data = self.gestor_archivo.load_csv(file_name)
             if data is not None:
+                # Display the column names to help debug issues with missing columns
+                st.write("Columns in the loaded DataFrame:", data.columns.tolist())
+                
+                # Check for program name column, use Settings configuration
+                column_name = Settings.PROGRAM_NAME_COLUMN
+                if column_name in data.columns:
+                    if keywords:
+                        data = self.filter_programs_by_keyword(data, keywords, column=column_name)
+                else:
+                    st.warning(f"'{column_name}' column not found in {file_name}. Please check the column name or update Settings.PROGRAM_NAME_COLUMN.")
+                
+                # Save the filtered or unfiltered data
                 self.programas_academicos[file_name] = data
+
+    def filter_programs_by_keyword(self, df, keywords, column='program_name'):
+        """Filter DataFrame rows based on keywords in the specified column."""
+        keywords_list = keywords.lower().split()
+        mask = df[column].apply(lambda x: any(keyword in x.lower() for keyword in keywords_list) if isinstance(x, str) else False)
+        return df[mask]
 
     def export_data(self, format_type="csv"):
         if not self.programas_academicos:
