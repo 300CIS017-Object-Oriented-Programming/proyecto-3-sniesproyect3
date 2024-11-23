@@ -155,3 +155,47 @@ with tabs[1]:
                 st.warning("No se encontraron programas con las palabras clave especificadas.")
     else:
         st.warning("Por favor, seleccione un rango de años y cargue archivos en la pestaña 'Inicio'.")
+
+with tabs[2]:
+    st.subheader("Analisis Final")
+    st.subheader("Exportación de Datos")
+    if controller.data != None & controller.data != controller.data.empty():
+        st.write("Datos disponibles para exportación")
+        st.dataframe(controller.data)
+
+        st.subheader("Exportar Datos")
+        export_format = st.radio("Seleccione el formato de exportación:", ["CSV","JSON","XLSX"])
+
+        if st._bottom("Exportar"):
+            output_path = os.path.join(ruta_temporal, f"exported_data.{export_format.lower()}")
+
+            try:
+                if export_format == "CSV":
+                    controller.data.to_csv(output_path, index = False)
+                elif export_format == "JSON":
+                    controller.data.to_json(output_path, orient = "records", lines = True)
+                elif export_format == "XLSX":
+                    controller.data.to_excel(output_path, index= False, engine= "openpyxl")
+
+                with open(output_path, "rb") as file:
+                    btn = st.download_button(
+                        label=f"Descargar{export_format}", 
+                        data= file, 
+                        file_name= f"Data exportado{export_format.lower()}", 
+                        mime=f"texto{export_format.lower()}"
+                        if export_format != "XLSX" else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" #lo de applicaciton.etc es el MIME para archivos Excel en formato xlsx
+                        )
+                    st.success(f"Datos exportados exitosamente como {export_format}.")
+
+            except Exception as e:
+                st.error(f"Error al exportar datos {e}")
+
+        else:
+            st.warning("No hay datos disponibles para exportar.")
+
+            
+
+
+
+                
+                
