@@ -10,7 +10,7 @@ class SNIESController:
     def cargar_datos_por_rango(self, archivos, anio_inicio, anio_fin):
         dfs = []
         for archivo in archivos:
-            # Extraer el año del nombre del archivo (suponiendo formato admitidos2021.xlsx)
+            # Extraer el año del nombre del archivo
             for anio in range(anio_inicio, anio_fin + 1):
                 if str(anio) in archivo:
                     ruta = f"{self.ruta_archivos}/{archivo}"
@@ -28,3 +28,4 @@ class SNIESController:
         if self.data is None or self.data.empty:
             raise ValueError("No hay datos cargados para filtrar.")
         return filtrar_programas(self.data, palabras_clave)
+

@@ -93,66 +93,17 @@ with tabs[0]:
                 f.write(uploaded_file.getbuffer())
             st.success(f"Archivo {uploaded_file.name} guardado en la carpeta temporal.")
 
-        # Mostrar los archivos en la carpeta temporal
-    #with st.expander("Mostrar Archivos en la Carpeta Temporal"):
-     #   temp_files = os.listdir(ruta_temporal)
-      #  if temp_files:
-       #     st.write("Archivos en la carpeta temporal:")
-        #    for temp_file in temp_files:
-         #       st.write(f"- {temp_file}")
-       # else:
-          #  st.write("No hay archivos en la carpeta temporal.")
-
-#with tabs[1]:
- #   st.subheader("Filtrado de información:")
-  #  texto_buqueda = st.text_input("Ingrese palabras clave (nombre programa Académico o nivel de formación):")
-
-    #if texto_buqueda:
-    #selected_option = st_free_text_select(
-      #  label="Selecciona una opción",
-     #   options=["opción1", "opción2", "opción3","casaa","perro"],
-        #default="opción1"
-    #)
 
 with tabs[1]:
     st.subheader("Filtrado de información:")
-
-    # Inicializar el controlador
+    texto_buqueda = st.text_input("Ingrese palabras clave (nombre programa Académico):")
     controller = SNIESController(ruta_archivos)
 
-    # Validar si hay archivos disponibles
-    if archivos_disponibles:
-        # Cargar solo los archivos dentro del rango seleccionado
-        controller.cargar_datos_por_rango(archivos_disponibles, anio_inicio, anio_fin)
-        st.success("Archivos cargados correctamente.")
+    if texto_buqueda:
+        selected_option = st_free_text_select(
+            label="Selecciona una opción",
+            options=["opción1", "opción2", "opción3","casaa","perro"],
+            #default="opción1"
+    )
 
-        # Mostrar los datos iniciales consolidados
-        st.write("Datos consolidados:")
-        st.dataframe(controller.data)
 
-        # Filtro de palabras clave
-        palabras_clave = st_free_text_select(
-            "Ingrese palabras clave para buscar programas académicos:",
-            controller.data["programa"].unique().tolist()
-        )
-
-        # Aplicar filtro
-        if palabras_clave:
-            df_filtrado = controller.filtrar_programas(palabras_clave)
-
-            # Mostrar resultados filtrados
-            if not df_filtrado.empty:
-                st.write(f"Programas encontrados: {len(df_filtrado)}")
-                st.dataframe(df_filtrado)
-
-                # Preselección de programas
-                programas_seleccionados = st.multiselect(
-                    "Seleccione programas para el análisis:",
-                    df_filtrado["programa"].unique()
-                )
-                st.write("Programas seleccionados:")
-                st.write(programas_seleccionados)
-            else:
-                st.warning("No se encontraron programas con las palabras clave especificadas.")
-    else:
-        st.warning("Por favor, seleccione un rango de años y cargue archivos en la pestaña 'Inicio'.")
