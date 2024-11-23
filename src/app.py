@@ -3,9 +3,14 @@ import os
 from SNIES_controller import SNIESController
 from streamlit_free_text_select import st_free_text_select
 
+# Set the title
 st.title("SNIES Extractor APP 📊")
 
+# Create tabs
 tabs = st.tabs(["Inicio", "Filtrado de Información", "Análisis Final"])
+
+# Base directory of the current script
+base_dir = os.path.dirname(os.path.abspath(__file__))
 
 with tabs[0]:
     st.subheader("Análisis de datos de educación superior")
@@ -14,22 +19,18 @@ with tabs[0]:
         "Seleccione un rango de años y los archivos que desea analizar para comenzar."
     )
 
-    # Get the absolute path of the image
-    image_path = os.path.abspath(
-        "C:/Users/feijo/Documents/Javeriana Cali/Semestre 3/Imagenes/imagen1.jpg"
-    )
 
-    # Display the image
-    st.image(image_path, caption=".", use_column_width=True)
+    image_path = os.path.join(base_dir, "images", "imagen1.jpg")
 
-    # Ruta de los archivos
-    ruta_archivos = os.path.abspath(
-        "C:/Users/feijo/Documents/Javeriana Cali/Semestre 3/tareasPOO/ENSAYO 3/pythonProject1/inputs"
-    )
 
-    ruta_temporal = os.path.abspath(
-        "C:/Users/feijo/Documents/Javeriana Cali/Semestre 3/tareasPOO/ENSAYO 3/pythonProject1/temporal"
-    )
+    if os.path.exists(image_path):
+        st.image(image_path, caption=".", use_container_width=True)
+    else:
+        st.error("La imagen no se encuentra en la ruta especificada.")
+
+
+    ruta_archivos = os.path.join(base_dir, "inputs")
+    ruta_temporal = os.path.join(base_dir, "temporal")
 
 
     # Crear la carpeta temporal si no existe
