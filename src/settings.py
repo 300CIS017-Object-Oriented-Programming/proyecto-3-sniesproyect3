@@ -12,6 +12,7 @@ STR_GRADUADOS = "GRADUADOS"
 STR_INSCRITOS = "INSCRITOS"
 STR_MATRICULADOS = "MATRICULADOS"
 STR_PRIMER_CURSO = "PRIMER CURSO"
+STR_GENERO = "SEXO"
 
 COLUMNAS_RELEVANTES = [
     STR_CODIGO_SNIES,
@@ -29,3 +30,31 @@ COLUMNAS_RELEVANTES = [
     STR_MATRICULADOS,
     STR_PRIMER_CURSO,
 ]
+
+COLOR_MAP_MODALIDAD = {
+    'Presencial': '#a8bded',
+    'Virtual': '#c9eda8'
+}
+
+COLOR_MAP_SEXO = {
+    'Femenino': '#a1074a',
+    'Masculino': '#006745'
+}
+
+COLOR_MAP_NIVEL_FORMACION = {
+    'Doctorado': '#f9917c',
+    'Maestría': '#f0df7a',
+    'Pregrado': '#a7f07a',
+    'Especialización': '#7ad2f0'
+}
+
+COLORES_TENDENCIA = ['#6253a7', '#a253a7', '#189de8', '#30a063', '#a21656']
+
+MAPEO_GENERO = {
+    "Hombre": "Masculino",
+    "Mujer": "Femenino",
+    "Masculino": "Masculino",
+    "Femenino": "Femenino",
+    "No binario": "No binario"
+}
+

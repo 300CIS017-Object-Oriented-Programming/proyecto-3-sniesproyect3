@@ -14,10 +14,9 @@ def limpiar_columna(nombre):
         if unicodedata.category(c) != 'Mn'
     ).lower().replace(" ", "_")
 
-@st.cache_data
+@st.cache_data # Cacheamos la función para que no se ejecute en cada iteracion
 def leer_y_consolidar_archivos_cached(archivos_seleccionados, ruta_base):
     dfs = []
-
     for archivo in archivos_seleccionados:
         ruta_completa = os.path.join(ruta_base, archivo)
         try:
