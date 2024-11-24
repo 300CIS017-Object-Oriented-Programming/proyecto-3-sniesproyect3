@@ -2,6 +2,8 @@ import streamlit as st
 import os
 import pandas as pd
 import unicodedata
+from filtrado import filtrar_por_programas, obtener_programas_unicos
+from lectura import leer_y_consolidar_archivos_cached, limpiar_columna
 
 from settings import (
     STR_CODIGO_SNIES,
@@ -38,58 +40,11 @@ COLUMNAS_RELEVANTES = [
     STR_PRIMER_CURSO,
 ]
 
-# Función para limpiar y estandarizar nombres de columnas
-def limpiar_columna(nombre):
-    """
-    Elimina acentos y normaliza un nombre de columna.
-    """
-    return ''.join(
-        c for c in unicodedata.normalize('NFD', nombre)
-        if unicodedata.category(c) != 'Mn'
-    ).lower().replace(" ", "_")
+
 
 COLUMNAS_RELEVANTES = [limpiar_columna(col) for col in COLUMNAS_RELEVANTES]
 
-@st.cache_data
-def leer_y_consolidar_archivos_cached(archivos_seleccionados, ruta_base):
-    dfs = []
 
-    for archivo in archivos_seleccionados:
-        ruta_completa = os.path.join(ruta_base, archivo)
-        try:
-            df = pd.read_excel(ruta_completa, engine="openpyxl")
-            df.columns = [limpiar_columna(col) for col in df.columns]
-
-            columna_estandar = limpiar_columna(STR_PROGRAMA_ACADEMICO)
-            if columna_estandar not in df.columns:
-                st.error(
-                    f"El archivo {archivo} no contiene la columna '{STR_PROGRAMA_ACADEMICO}'. Revisa el nombre de la columna.")
-                continue
-
-            df["archivo_origen"] = archivo  # Añadir columna de origen
-            dfs.append(df)
-
-        except Exception as e:
-            st.error(f"Error al leer el archivo {archivo}: {e}")
-
-    if dfs:
-        return pd.concat(dfs, ignore_index=True)
-    else:
-        return pd.DataFrame()
-
-@st.cache_data
-def obtener_programas_unicos(df, columna_programa):
-    """
-    Devuelve una lista ordenada de programas académicos únicos.
-    """
-    return sorted(df[columna_programa].dropna().unique())
-
-# Función para filtrar DataFrame por programas seleccionados
-def filtrar_por_programas(df, programas_seleccionados, columna_programa):
-    """
-    Filtra el DataFrame por los programas seleccionados.
-    """
-    return df[df[columna_programa].isin(programas_seleccionados)]
 
 # Aplicación de Streamlit
 st.title("SNIES Extractor APP 📊")
@@ -107,7 +62,7 @@ with tabs[0]:
 
     image_path = os.path.join(base_dir, "images", "imagen1.jpg")
     if os.path.exists(image_path):
-        st.image(image_path, caption="SNIES Extractor", use_container_width=True)
+        st.image(image_path, caption="SNIES Extractor", use_container_width = True)
     else:
         st.error("La imagen no se encuentra en la ruta especificada.")
 
@@ -187,7 +142,7 @@ with tabs[0]:
         archivos_seleccionados = list(set(seleccionados_disponibles + uploaded_files_names))
         st.session_state.archivos_seleccionados = archivos_seleccionados
 
-with tabs[1]:
+with tabs[1]:  # Pestaña: Filtrado de Información
     st.subheader("Filtrado de Información por Programa Académico")
 
     # Verificar que haya archivos seleccionados
@@ -201,14 +156,46 @@ with tabs[1]:
         # Leer y consolidar los datos de los archivos seleccionados
         df_consolidado = leer_y_consolidar_archivos_cached(st.session_state.archivos_seleccionados, ruta_archivos)
 
+        # Guardar df_consolidado en session_state
+        st.session_state.df_consolidado = df_consolidado
+
         if not df_consolidado.empty:
             # Validar si la columna 'programa_academico' está presente
             columna_programa = limpiar_columna(STR_PROGRAMA_ACADEMICO)
+            columna_anio = limpiar_columna(STR_SEMESTRE)  # Columna del semestre
+
             if columna_programa not in df_consolidado.columns:
                 st.error(f"La columna '{STR_PROGRAMA_ACADEMICO}' no está presente en los datos consolidados. Revisa los archivos seleccionados.")
             else:
+                # Crear la columna 'anio_periodo' combinando año y periodo académico
+                if columna_anio in df_consolidado.columns:
+                    df_consolidado["anio_periodo"] = df_consolidado[columna_anio].astype(str)
+                    st.session_state.df_consolidado = df_consolidado
+                else:
+                    st.error(f"La columna del semestre ('{columna_anio}') no está presente en los datos.")
+
                 # Obtener los programas únicos
                 programas_unicos = obtener_programas_unicos(df_consolidado, columna_programa)
+
+                # Botón de cálculo arriba
+                if st.button("Calcular datos para los programas seleccionados (Filtrado)"):
+                    if not st.session_state.programas_seleccionados:
+                        st.warning("Por favor, selecciona al menos un programa académico antes de continuar.")
+                    else:
+                        # Filtrar los datos por los programas seleccionados
+                        programas_seleccionados = list(st.session_state.programas_seleccionados)
+                        df_filtrado = filtrar_por_programas(df_consolidado, programas_seleccionados, columna_programa)
+
+                        # Guardar el resultado filtrado y seleccionados para análisis posterior
+                        st.session_state.df_filtrado = df_filtrado
+                        st.session_state.programas_seleccionados_final = programas_seleccionados
+
+                        # Mostrar los datos filtrados (o realizar cálculos)
+                        st.subheader("Resultados para los programas seleccionados:")
+                        columnas_presentes = [col for col in COLUMNAS_RELEVANTES if col in df_filtrado.columns]
+                        df_resultado = df_filtrado[columnas_presentes]
+
+                        st.dataframe(df_resultado)
 
                 # Crear una entrada de texto para filtrar programas
                 filtro = st.text_input("Filtra programas académicos escribiendo aquí:")
@@ -220,22 +207,6 @@ with tabs[1]:
                 if "programas_seleccionados" not in st.session_state:
                     st.session_state.programas_seleccionados = set()  # Usamos un set para evitar duplicados
 
-                # **Mover el botón de cálculo aquí**
-                if st.button("Calcular datos para los programas seleccionados"):
-                    if not st.session_state.programas_seleccionados:
-                        st.warning("Por favor, selecciona al menos un programa académico antes de continuar.")
-                    else:
-                        # Filtrar los datos por los programas seleccionados
-                        programas_seleccionados = list(st.session_state.programas_seleccionados)
-                        df_filtrado = filtrar_por_programas(df_consolidado, programas_seleccionados, columna_programa)
-
-                        # Mostrar los datos filtrados (o realizar cálculos)
-                        st.subheader("Resultados para los programas seleccionados:")
-                        columnas_presentes = [col for col in COLUMNAS_RELEVANTES if col in df_filtrado.columns]
-                        df_resultado = df_filtrado[columnas_presentes]
-
-                        st.dataframe(df_resultado)
-
                 # Mostrar los checkboxes dinámicamente según el filtro
                 st.subheader("Selecciona los programas académicos de interés:")
                 for programa in programas_filtrados:
@@ -243,14 +214,132 @@ with tabs[1]:
                         st.session_state.programas_seleccionados.add(programa)  # Agregar al set global
                     else:
                         st.session_state.programas_seleccionados.discard(programa)  # Quitar del set global
-
-                # Convertir el set a lista para mantener consistencia
-                programas_seleccionados = list(st.session_state.programas_seleccionados)
-
-                # Mostrar los programas seleccionados
-                #st.success(f"Programas seleccionados: {len(programas_seleccionados)}")
-                #st.write(programas_seleccionados)
         else:
             st.warning("El DataFrame consolidado está vacío. Revisa los archivos seleccionados.")
     else:
         st.warning("No hay archivos seleccionados. Por favor, selecciona archivos en la pestaña 'Inicio'.")
+
+with tabs[2]:  # Pestaña: Análisis Final
+    st.subheader("Análisis Final de los Programas Seleccionados")
+
+    if "df_consolidado" not in st.session_state or st.session_state.df_consolidado.empty:
+        st.warning("No hay datos consolidados disponibles. Vuelve a la pestaña de Filtrado de Información.")
+    else:
+        df_consolidado = st.session_state.df_consolidado
+
+        # Verificar si las columnas necesarias existen en los datos
+        columna_modalidad = limpiar_columna(STR_METODOLOGIA)
+        columna_institucion = limpiar_columna(STR_NOMBRE_IES)
+        columna_programa = limpiar_columna(STR_PROGRAMA_ACADEMICO)
+        columna_anio_periodo = "anio_periodo"
+
+        # Crear lista de columnas métricas
+        columnas_metrica = [
+            limpiar_columna(STR_INSCRITOS),
+            limpiar_columna(STR_ADMITIDOS),
+            limpiar_columna(STR_PRIMER_CURSO),
+            limpiar_columna(STR_MATRICULADOS),
+            limpiar_columna(STR_GRADUADOS),
+        ]
+
+        # Filtrar las columnas que existen en el DataFrame
+        columnas_presentes = [col for col in columnas_metrica if col in df_consolidado.columns]
+
+        if not columnas_presentes:
+            st.error("Ninguna de las columnas métricas está presente en los datos. Verifica los archivos cargados.")
+        else:
+            if columna_modalidad not in df_consolidado.columns:
+                st.error(f"La columna de modalidad ('{columna_modalidad}') no está presente en los datos.")
+            elif columna_anio_periodo not in df_consolidado.columns:
+                st.error(f"La columna 'anio_periodo' no está presente en los datos. Asegúrate de generarla en el filtrado.")
+            else:
+                # Mostrar programas seleccionados para análisis final
+                if "df_filtrado" in st.session_state and not st.session_state.df_filtrado.empty:
+                    st.subheader("Selecciona programas específicos para el análisis final:")
+
+                    filtro_final = st.text_input("Filtra programas específicos escribiendo aquí (Análisis Final):")
+
+                    programas_filtrados_final = [
+                        p for p in st.session_state.programas_seleccionados_final
+                        if filtro_final.lower() in p.lower()
+                    ] if filtro_final else st.session_state.programas_seleccionados_final
+
+                    programas_finales_seleccionados = []
+                    for programa in programas_filtrados_final:
+                        if st.checkbox(programa, key=f"checkbox_final_{programa}"):
+                            programas_finales_seleccionados.append(programa)
+
+                    if programas_finales_seleccionados:
+                        st.success(f"Programas seleccionados para el análisis final: {len(programas_finales_seleccionados)}")
+
+                        df_analisis_final = st.session_state.df_filtrado[
+                            st.session_state.df_filtrado[columna_programa].isin(programas_finales_seleccionados)
+                        ]
+
+                        # Agrupar por Modalidad, Programa, Institución y Año/Periodo
+                        df_resultado_agrupado = (
+                            df_analisis_final.groupby(
+                                [columna_modalidad, columna_programa, columna_institucion, columna_anio_periodo]
+                            )[columnas_presentes]
+                            .sum()
+                            .reset_index()
+                        )
+
+                        # Pivotear para estructurar como en la imagen
+                        df_pivot = df_resultado_agrupado.pivot_table(
+                            index=[columna_modalidad, columna_programa, columna_institucion],
+                            columns=columna_anio_periodo,
+                            values=columnas_presentes,
+                            aggfunc="sum",
+                            fill_value=0,
+                        )
+
+                        # Renombrar columnas
+                        df_pivot.columns = [
+                            f"{metric} ({period})" for period, metric in df_pivot.columns
+                        ]
+                        df_pivot.reset_index(inplace=True)
+
+                        # Mostrar tabla final
+                        st.subheader("Resultados Finales Agrupados:")
+                        st.dataframe(df_pivot, use_container_width=True)
+
+                        # Exportar resultados
+                        # Opciones para exportar resultados
+                        st.subheader("Exportar resultados:")
+                        col1, col2, col3 = st.columns(3)  # Crear tres columnas
+
+                        # Botón para descargar como CSV
+                        with col1:
+                            csv = df_pivot.to_csv(index=False).encode("utf-8")
+                            st.download_button(
+                                label="Descargar CSV",
+                                data=csv,
+                                file_name="resultados_analisis_final.csv",
+                                mime="text/csv",
+                            )
+
+                        # Botón para descargar como JSON
+                        with col2:
+                            json = df_pivot.to_json(orient="records", force_ascii=False)
+                            st.download_button(
+                                label="Descargar JSON",
+                                data=json,
+                                file_name="resultados_analisis_final.json",
+                                mime="application/json",
+                            )
+
+                        # Botón para descargar como TXT
+                        with col3:
+                            txt = df_pivot.to_string(index=False)
+                            st.download_button(
+                                label="Descargar TXT",
+                                data=txt,
+                                file_name="resultados_analisis_final.txt",
+                                mime="text/plain",
+                            )
+
+                    else:
+                        st.info("No se seleccionó ningún programa para el análisis final.")
+                else:
+                    st.warning("No hay datos filtrados disponibles. Vuelve a la pestaña de Filtrado de Información.")
