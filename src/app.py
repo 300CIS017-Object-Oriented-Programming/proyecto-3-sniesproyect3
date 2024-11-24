@@ -1,10 +1,42 @@
 import streamlit as st
 import os
 import pandas as pd
-from settings import STR_PROGRAMA_ACADEMICO
-
 import unicodedata
 
+from settings import (
+    STR_CODIGO_SNIES,
+    STR_PROGRAMA_ACADEMICO,
+    STR_METODOLOGIA,
+    STR_NOMBRE_IES,
+    STR_TIPO_IES,
+    STR_DEPARTAMENTO,
+    STR_MUNICIPIO,
+    STR_NIVEL_FORMACION,
+    STR_SEMESTRE,
+    STR_ADMITIDOS,
+    STR_GRADUADOS,
+    STR_INSCRITOS,
+    STR_MATRICULADOS,
+    STR_PRIMER_CURSO,
+)
+
+# Lista de columnas relevantes
+COLUMNAS_RELEVANTES = [
+    STR_CODIGO_SNIES,
+    STR_PROGRAMA_ACADEMICO,
+    STR_METODOLOGIA,
+    STR_NOMBRE_IES,
+    STR_TIPO_IES,
+    STR_DEPARTAMENTO,
+    STR_MUNICIPIO,
+    STR_NIVEL_FORMACION,
+    STR_SEMESTRE,
+    STR_ADMITIDOS,
+    STR_GRADUADOS,
+    STR_INSCRITOS,
+    STR_MATRICULADOS,
+    STR_PRIMER_CURSO,
+]
 
 # Función para limpiar y estandarizar nombres de columnas
 def limpiar_columna(nombre):
@@ -16,23 +48,18 @@ def limpiar_columna(nombre):
         if unicodedata.category(c) != 'Mn'
     ).lower().replace(" ", "_")
 
+COLUMNAS_RELEVANTES = [limpiar_columna(col) for col in COLUMNAS_RELEVANTES]
 
-# Función para leer y consolidar archivos
-def leer_y_consolidar_archivos(archivos_seleccionados, ruta_base):
+@st.cache_data
+def leer_y_consolidar_archivos_cached(archivos_seleccionados, ruta_base):
     dfs = []
 
     for archivo in archivos_seleccionados:
         ruta_completa = os.path.join(ruta_base, archivo)
-        st.write(f"Intentando leer archivo: {ruta_completa}")
         try:
             df = pd.read_excel(ruta_completa, engine="openpyxl")
-            st.write(f"Archivo leído correctamente: {archivo} - Filas: {len(df)}")
-
-            # Estandarizar nombres de columnas
             df.columns = [limpiar_columna(col) for col in df.columns]
-            st.write(f"Columnas después de la estandarización: {df.columns.tolist()}")
 
-            # Validar columna 'programa_academico' usando STR_PROGRAMA_ACADEMICO
             columna_estandar = limpiar_columna(STR_PROGRAMA_ACADEMICO)
             if columna_estandar not in df.columns:
                 st.error(
@@ -50,21 +77,19 @@ def leer_y_consolidar_archivos(archivos_seleccionados, ruta_base):
     else:
         return pd.DataFrame()
 
-
-# Función para filtrar por palabras clave
-def filtrar_por_palabras_clave(df, palabras_clave):
+@st.cache_data
+def obtener_programas_unicos(df, columna_programa):
     """
-    Filtra un DataFrame por palabras clave en la columna 'programa_academico'.
+    Devuelve una lista ordenada de programas académicos únicos.
     """
-    if not palabras_clave:
-        return df  # Si no hay palabras clave, devuelve el DataFrame completo
+    return sorted(df[columna_programa].dropna().unique())
 
-    # Crear una expresión regular con las palabras clave
-    regex = "|".join(palabras_clave)
-
-    # Filtrar programas académicos
-    return df[df["programa_academico"].str.contains(regex, case=False, na=False)]
-
+# Función para filtrar DataFrame por programas seleccionados
+def filtrar_por_programas(df, programas_seleccionados, columna_programa):
+    """
+    Filtra el DataFrame por los programas seleccionados.
+    """
+    return df[df[columna_programa].isin(programas_seleccionados)]
 
 # Aplicación de Streamlit
 st.title("SNIES Extractor APP 📊")
@@ -96,11 +121,9 @@ with tabs[0]:
     if "archivos_seleccionados" not in st.session_state:
         st.session_state.archivos_seleccionados = []  # Archivos seleccionados para análisis
 
-    # Configuración de rutas
     ruta_archivos = os.path.join(base_dir, "inputs")
     ruta_temporal = os.path.join(base_dir, "temporal")
 
-    # Crear carpeta temporal si no existe
     if not os.path.exists(ruta_temporal):
         os.makedirs(ruta_temporal)
 
@@ -131,12 +154,10 @@ with tabs[0]:
     archivos_disponibles = []
     if os.path.exists(ruta_archivos):
         for archivo in os.listdir(ruta_archivos):
-            # Incluir el límite superior (anio_fin)
             for anio in range(st.session_state.anio_inicio, st.session_state.anio_fin + 1):
                 if archivo.endswith(".xlsx") and str(anio) in archivo:
                     archivos_disponibles.append(archivo)
 
-    # Mostrar archivos disponibles
     if archivos_disponibles:
         st.session_state.archivos_disponibles = archivos_disponibles
         with st.expander("Mostrar Archivos Disponibles"):
@@ -145,48 +166,26 @@ with tabs[0]:
     else:
         st.warning("No hay archivos disponibles en el rango de años seleccionado.")
 
-    # Selección de archivos disponibles
     seleccionados_disponibles = st.multiselect(
         "Selecciona archivos disponibles para incluir:",
         st.session_state.archivos_disponibles
     )
 
-    # Subir nuevos archivos
-    st.subheader("3. Cargar Nuevos Archivos 📤")
     uploaded_files = st.file_uploader(
         "Sube tus archivos aquí (solo .xlsx):", accept_multiple_files=True, type=["xlsx"]
     )
 
     uploaded_files_names = []
     if uploaded_files:
-        st.write(f"{len(uploaded_files)} archivo(s) subido(s):")
         for uploaded_file in uploaded_files:
-            st.write(f"- {uploaded_file.name}")
             temp_file_path = os.path.join(ruta_temporal, uploaded_file.name)
             with open(temp_file_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
             uploaded_files_names.append(uploaded_file.name)
 
-    # Botón para combinar selección
     if st.button("Confirmar Selección de Archivos"):
-        # Combinar los seleccionados disponibles con los nombres de los subidos
         archivos_seleccionados = list(set(seleccionados_disponibles + uploaded_files_names))
-
-        if archivos_seleccionados:
-            st.session_state.archivos_seleccionados = archivos_seleccionados
-            st.success(f"Archivos seleccionados: {len(st.session_state.archivos_seleccionados)} archivo(s).")
-        else:
-            st.warning("No has seleccionado ni subido ningún archivo.")
-
-    # Mostrar archivos seleccionados
-    st.subheader("4. Archivos Seleccionados para Análisis")
-    if st.session_state.archivos_seleccionados:
-        with st.expander("Mostrar Archivos Seleccionados"):
-            for archivo in st.session_state.archivos_seleccionados:
-                st.write(f"- {archivo}")
-    else:
-        st.info("No se han seleccionado archivos para análisis.")
-
+        st.session_state.archivos_seleccionados = archivos_seleccionados
 
 with tabs[1]:
     st.subheader("Filtrado de Información por Programa Académico")
@@ -197,50 +196,60 @@ with tabs[1]:
         for archivo in st.session_state.archivos_seleccionados:
             st.write(f"- {archivo}")
 
-            # Leer y consolidar los datos de los archivos seleccionados
-        df_consolidado = leer_y_consolidar_archivos(st.session_state.archivos_seleccionados, ruta_archivos)
+        st.write("Cargando y consolidando datos... Espere un momento")
+
+        # Leer y consolidar los datos de los archivos seleccionados
+        df_consolidado = leer_y_consolidar_archivos_cached(st.session_state.archivos_seleccionados, ruta_archivos)
 
         if not df_consolidado.empty:
-            st.success(
-                f"Datos consolidados: {len(df_consolidado)} filas de {len(st.session_state.archivos_seleccionados)} archivos.")
-
-            # Mostrar columnas disponibles en el DataFrame consolidado
-            st.write("Columnas disponibles después de la estandarización:")
-            st.write(df_consolidado.columns.tolist())
-
             # Validar si la columna 'programa_academico' está presente
             columna_programa = limpiar_columna(STR_PROGRAMA_ACADEMICO)
             if columna_programa not in df_consolidado.columns:
-                st.error(
-                    f"La columna '{STR_PROGRAMA_ACADEMICO}' no está presente en los datos consolidados. Revisa los archivos seleccionados.")
+                st.error(f"La columna '{STR_PROGRAMA_ACADEMICO}' no está presente en los datos consolidados. Revisa los archivos seleccionados.")
             else:
-                # Entrada de texto para palabras clave
-                palabras_clave = st.text_input("Escribe palabras clave para filtrar programas académicos:")
+                # Obtener los programas únicos
+                programas_unicos = obtener_programas_unicos(df_consolidado, columna_programa)
 
-                if palabras_clave:
-                    st.write("Procesando palabras clave...")
-                    lista_palabras = [p.strip() for p in palabras_clave.split()]
-                    st.write("Lista de palabras clave:", lista_palabras)
+                # Crear una entrada de texto para filtrar programas
+                filtro = st.text_input("Filtra programas académicos escribiendo aquí:")
 
-                    # Filtrar programas académicos
-                    df_filtrado = filtrar_por_palabras_clave(df_consolidado, lista_palabras)
+                # Filtrar los programas únicos según el texto ingresado
+                programas_filtrados = [p for p in programas_unicos if filtro.lower() in p.lower()] if filtro else programas_unicos
 
-                    if not df_filtrado.empty:
-                        st.success(f"Se encontraron {len(df_filtrado)} programas que coinciden con las palabras clave.")
-                        st.dataframe(df_filtrado)
+                # Inicializar seleccionados en session_state si no existe
+                if "programas_seleccionados" not in st.session_state:
+                    st.session_state.programas_seleccionados = set()  # Usamos un set para evitar duplicados
 
-                        # Seleccionar programas específicos
-                        seleccionados_programas = st.multiselect(
-                            "Selecciona programas para análisis:",
-                            options=df_filtrado[columna_programa].unique()
-                        )
-
-                        # Guardar programas seleccionados en st.session_state
-                        if seleccionados_programas:
-                            st.session_state.programas_seleccionados = seleccionados_programas
-                            st.success(f"Programas seleccionados: {len(seleccionados_programas)}")
+                # **Mover el botón de cálculo aquí**
+                if st.button("Calcular datos para los programas seleccionados"):
+                    if not st.session_state.programas_seleccionados:
+                        st.warning("Por favor, selecciona al menos un programa académico antes de continuar.")
                     else:
-                        st.warning("No se encontraron programas académicos que coincidan con las palabras clave.")
+                        # Filtrar los datos por los programas seleccionados
+                        programas_seleccionados = list(st.session_state.programas_seleccionados)
+                        df_filtrado = filtrar_por_programas(df_consolidado, programas_seleccionados, columna_programa)
+
+                        # Mostrar los datos filtrados (o realizar cálculos)
+                        st.subheader("Resultados para los programas seleccionados:")
+                        columnas_presentes = [col for col in COLUMNAS_RELEVANTES if col in df_filtrado.columns]
+                        df_resultado = df_filtrado[columnas_presentes]
+
+                        st.dataframe(df_resultado)
+
+                # Mostrar los checkboxes dinámicamente según el filtro
+                st.subheader("Selecciona los programas académicos de interés:")
+                for programa in programas_filtrados:
+                    if st.checkbox(programa, key=f"checkbox_{programa}"):
+                        st.session_state.programas_seleccionados.add(programa)  # Agregar al set global
+                    else:
+                        st.session_state.programas_seleccionados.discard(programa)  # Quitar del set global
+
+                # Convertir el set a lista para mantener consistencia
+                programas_seleccionados = list(st.session_state.programas_seleccionados)
+
+                # Mostrar los programas seleccionados
+                #st.success(f"Programas seleccionados: {len(programas_seleccionados)}")
+                #st.write(programas_seleccionados)
         else:
             st.warning("El DataFrame consolidado está vacío. Revisa los archivos seleccionados.")
     else:
