@@ -4,6 +4,8 @@ import pandas as pd
 import unicodedata
 from filtrado import filtrar_por_programas, obtener_programas_unicos
 from lectura import leer_y_consolidar_archivos_cached, limpiar_columna
+import plotly.express as px
+import plotly.graph_objects as go
 
 from settings import (
     STR_CODIGO_SNIES,
@@ -62,7 +64,7 @@ with tabs[0]:
 
     image_path = os.path.join(base_dir, "images", "imagen1.jpg")
     if os.path.exists(image_path):
-        st.image(image_path, caption="SNIES Extractor", use_container_width = True)
+        st.image(image_path, caption="SNIES Extractor", use_column_width = True)
     else:
         st.error("La imagen no se encuentra en la ruta especificada.")
 
@@ -303,6 +305,75 @@ with tabs[2]:  # Pestaña: Análisis Final
                         # Mostrar tabla final
                         st.subheader("Resultados Finales Agrupados:")
                         st.dataframe(df_pivot, use_container_width=True)
+
+                        if not df_pivot.empty:
+                            st.subheader("Tendencias por Año de los Programas Académicos Seleccionados")
+
+                            # Extraer las métricas disponibles a partir de las columnas de df_pivot
+                            columnas_metricas = [col for col in df_pivot.columns if "(" in col and ")" in col]
+
+                            # Crear un DataFrame transformado para análisis
+                            df_long = df_pivot.melt(
+                                id_vars=[columna_modalidad, columna_programa, columna_institucion],
+                                value_vars=columnas_metricas,
+                                var_name="Año_Metrica",
+                                value_name="Valor",
+                            )
+
+                            # Extraer año y métrica de las columnas originales
+                            df_long["Año"] = df_long["Año_Metrica"].str.extract(r"(\d+\.\d+)").astype(float)
+                            df_long["Metrica"] = df_long["Año_Metrica"].str.extract(r"\((.+)\)").iloc[:, 0]
+
+                            # Iterar por cada métrica para generar gráficos
+                            for metrica in df_long["Metrica"].unique():
+                                st.write(f"### Tendencia de {metrica}")
+
+                                # Filtrar datos para la métrica actual
+                                df_metrica = df_long[df_long["Metrica"] == metrica]
+
+                                # Crear gráfico de líneas
+                                fig_lineas = px.line(
+                                    df_metrica,
+                                    x="Año",
+                                    y="Valor",
+                                    color=columna_programa,
+                                    line_group="metodologia",
+                                    title=f"Tendencia de {metrica} por Año",
+                                    labels={"Valor": metrica, "Año": "Año"},
+                                )
+
+                                # Configurar interactividad del gráfico de líneas
+                                fig_lineas.update_layout(
+                                    xaxis_title="Año",
+                                    yaxis_title=metrica,
+                                    hovermode="closest",
+                                    legend_title="Programas",
+                                )
+
+                                # Mostrar gráfico de líneas
+                                st.plotly_chart(fig_lineas, use_container_width=True)
+
+                                # Crear gráfico de barras
+                                fig_barras = px.bar(
+                                    df_metrica,
+                                    x="Año",
+                                    y="Valor",
+                                    color=columna_programa,
+                                    barmode="group",
+                                    title=f"Distribución de {metrica} por Año",
+                                    labels={"Valor": metrica, "Año": "Año"},
+                                )
+
+                                # Configurar interactividad del gráfico de barras
+                                fig_barras.update_layout(
+                                    xaxis_title="Año",
+                                    yaxis_title=metrica,
+                                    hovermode="closest",
+                                    legend_title="Programas",
+                                )
+
+                                # Mostrar gráfico de barras
+                                st.plotly_chart(fig_barras, use_container_width=True)
 
                         # Exportar resultados
                         # Opciones para exportar resultados
