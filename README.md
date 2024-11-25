@@ -141,9 +141,9 @@ classDiagram
         +MAPEO_GENERO: dict
     }
 
-    App --> Filtrado : "calls methods"
-    App --> Grafico : "calls methods"
-    App --> Lectura : "calls methods"
+    App --> Filtrado : "llaamado a funciones"
+    App --> Grafico : "llamado a funciones"
+    App --> Lectura : "llamado a funciones"
     Filtrado ..> Settings : "usa"
     Lectura ..> Settings : "usa" 
     Grafico ..> Settings : "usa" 
