@@ -32,6 +32,6 @@
 *.app
 
 # IDE Folders
-__pycache__/
+_pycache_/
 .idea/
 .vscode/
