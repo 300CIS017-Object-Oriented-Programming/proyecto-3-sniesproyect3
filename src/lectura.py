@@ -9,10 +9,11 @@ def limpiar_columna(nombre):
     """
     Elimina acentos y normaliza un nombre de columna.
     """
-    return ''.join(
-        c for c in unicodedata.normalize('NFD', nombre)
-        if unicodedata.category(c) != 'Mn'
-    ).lower().replace(" ", "_")
+    nombre_normalizado = unicodedata.normalize('NFD', nombre)
+    nombre_sin_acentos = ''.join(c for c in nombre_normalizado if unicodedata.category(c) != 'Mn')
+    nombre_minusculas = nombre_sin_acentos.lower()
+    nombre_final = nombre_minusculas.replace(" ", "_")
+    return nombre_final
 
 @st.cache_data # Cacheamos la función para que no se ejecute en cada iteracion
 def leer_y_consolidar_archivos_cached(archivos_seleccionados, ruta_base):
