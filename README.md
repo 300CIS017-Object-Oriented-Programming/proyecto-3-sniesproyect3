@@ -108,6 +108,9 @@ Los usuarios descargan los archivos directamente desde la interfaz.
 Manejo robusto de excepciones al leer archivos y procesar datos.
 Validación de entradas del usuario, como rangos de años o nombres de columnas.
 
+**Video** mostrando el funcionamiento del proyecto en terminos generales de código:
+- https://youtu.be/d7r7xDRu5bQ
+
 
 ```mermaid
 classDiagram

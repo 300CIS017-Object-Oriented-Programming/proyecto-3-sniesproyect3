@@ -163,7 +163,7 @@ with tabs[1]:  # Pestaña: Filtrado de Información
                 # Obtener los programas unicos
                 programas_unicos = obtener_programas_unicos(df_consolidado, columna_programa)
 
-                # Boton de cálculo arriba
+                # Boton de calculo arriba
                 if st.button("Calcular datos para los programas seleccionados (Filtrado)"):
                     if not st.session_state.programas_seleccionados:
                         st.warning("Por favor, selecciona al menos un programa académico antes de continuar.")
