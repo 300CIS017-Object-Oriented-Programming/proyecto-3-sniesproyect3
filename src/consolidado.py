@@ -11,4 +11,6 @@ def consolidar_métricas(df):
         Matriculados=("Matriculados", "sum"),
         Graduados=("Graduados", "sum"),
     ).reset_index()
+
+    
     return metrics
